@@ -14,15 +14,16 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.Toast;
 
 
 public class MainActivity extends ActionBarActivity {
 
     private BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-    ArrayAdapter<String> devices;
+    ArrayAdapter<String> devicesAdapter;
+    ListView devicesListView;
     private final int REQUEST_ENABLE_BT = 1;
-    private int USER_ALLOWED_BT = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,29 +33,63 @@ public class MainActivity extends ActionBarActivity {
         Button discover = (Button) findViewById(R.id.discover);
         discover.setOnClickListener(onDiscoveryCLick);
 
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        devicesAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
+        devicesListView = (ListView) findViewById(R.id.devicesList);
+        devicesListView.setAdapter(devicesAdapter);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+
         registerReceiver(mReceiver, filter); // Don't forget to unregister during onDestroy
     }
 
     View.OnClickListener onDiscoveryCLick = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            findViewById(R.id.discover).setEnabled(false);
-            switchBluetooth(true);
+            startDiscovery();
         }
     };
 
+    private boolean switchBluetooth(boolean action){
+        if (mBluetoothAdapter != null){
+            if (action) {
+                if (!mBluetoothAdapter.isEnabled()) {
+                    Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                }
+            } else if ( mBluetoothAdapter.isEnabled() ) return mBluetoothAdapter.disable();
+        } else {
+            // No fucking BT support
+            Toast.makeText(MainActivity.this, getString(R.string.no_bt_adapter), Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        if (requestCode == REQUEST_ENABLE_BT){
+            if (resultCode == RESULT_OK) startDiscovery();
+            else {
+                // User denied access to bluetooth radio
+                findViewById(R.id.discover).setEnabled(true);
+                Toast.makeText(MainActivity.this, getString(R.string.bt_access_required), Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     private boolean startDiscovery(){
+        switchBluetooth(true);
         if (mBluetoothAdapter.isDiscovering()) {
             Toast.makeText(this, "Discovery in process", Toast.LENGTH_LONG).show();
         } else {
             Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
             if (discoveryStarted) {
-                Log.i("discovery", "started");
+                Log.i("MainActivity", "Discovery started");
+                Toast.makeText(MainActivity.this, "Discovery started", Toast.LENGTH_LONG).show();
             } else {
-                Log.i("discovery", "could not be started");
-                Toast.makeText(this, "Discovery could not be started", Toast.LENGTH_LONG);
-                findViewById(R.id.discover).setEnabled(true);
+                Log.i("MainActivity", "Discovery could not be started");
+                Toast.makeText(MainActivity.this, "Discovery could not be started", Toast.LENGTH_LONG).show();
             }
             return discoveryStarted;
         }
@@ -69,42 +104,26 @@ public class MainActivity extends ActionBarActivity {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                // Add the name and address to an array adapter to show in a ListView
-                Log.i("Found", device.getName() + " found");
+                try {
+                    devicesAdapter.add(device.getName() + "\n" + device.getAddress());
+                } catch (NullPointerException e){
+                    Log.e("MainActivity", "Device name is null");
+                }
 
-                Toast.makeText(getApplicationContext(), "Found"+device.getName(), Toast.LENGTH_LONG).show();
+            }
 
-                //devices.add(device.getName() + "\n" + device.getAddress());
+            if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
+                Toast.makeText(MainActivity.this, "Discovery complete", Toast.LENGTH_LONG).show();
+                Log.i("MainActivity", "Discovery Finished");
+                findViewById(R.id.discover).setEnabled(true);
+            }
+
+            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.endsWith(action)){
+                devicesAdapter.clear();
+                findViewById(R.id.discover).setEnabled(false);
             }
         }
     };
-
-    private boolean switchBluetooth(boolean action){
-        if (mBluetoothAdapter != null){
-            if (action)
-                if (!mBluetoothAdapter.isEnabled()) {
-                    Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-                }
-            else if ( mBluetoothAdapter.isEnabled() ) return mBluetoothAdapter.disable();
-        } else {
-            // No fucking BT support
-            Toast.makeText(getApplicationContext(), getString(R.string.no_bt_adapter), Toast.LENGTH_LONG).show();
-        }
-        return false;
-    }
-
-    protected void onActivityResult(int requestCode, int resultCode, Intent data){
-        if (requestCode == REQUEST_ENABLE_BT){
-            if (resultCode == RESULT_OK){
-                USER_ALLOWED_BT = 1;
-                startDiscovery();
-            } else {
-                // User denied access to bluetooth radio
-                Toast.makeText(getApplicationContext(), getString(R.string.bt_access_required), Toast.LENGTH_LONG).show();
-            }
-        }
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -128,7 +147,7 @@ public class MainActivity extends ActionBarActivity {
 
     protected  void onDestroy(){
         super.onDestroy();
-        mBluetoothAdapter.cancelDiscovery();
+        if (mBluetoothAdapter.isDiscovering()) mBluetoothAdapter.cancelDiscovery();
         unregisterReceiver(mReceiver);
     }
 }
