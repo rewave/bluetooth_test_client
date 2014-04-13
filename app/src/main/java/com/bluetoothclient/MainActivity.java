@@ -13,18 +13,53 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
+import android.widget.Button;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 
 public class MainActivity extends ActionBarActivity {
 
-    private BluetoothAdapter mBluetoothAdapter;
-    private final static int REQUEST_ENABLE_BT = 1;
-    private final static int ON = 1;
-    private final static int OFF = 0;
+    private BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     ArrayAdapter<String> devices;
+    private final int REQUEST_ENABLE_BT = 1;
+    private int USER_ALLOWED_BT = 0;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        Button discover = (Button) findViewById(R.id.discover);
+        discover.setOnClickListener(onDiscoveryCLick);
+
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        registerReceiver(mReceiver, filter); // Don't forget to unregister during onDestroy
+    }
+
+    View.OnClickListener onDiscoveryCLick = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            findViewById(R.id.discover).setEnabled(false);
+            switchBluetooth(true);
+        }
+    };
+
+    private boolean startDiscovery(){
+        if (mBluetoothAdapter.isDiscovering()) {
+            Toast.makeText(this, "Discovery in process", Toast.LENGTH_LONG).show();
+        } else {
+            Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
+            if (discoveryStarted) {
+                Log.i("discovery", "started");
+            } else {
+                Log.i("discovery", "could not be started");
+                Toast.makeText(this, "Discovery could not be started", Toast.LENGTH_LONG);
+                findViewById(R.id.discover).setEnabled(true);
+            }
+            return discoveryStarted;
+        }
+        return false;
+    }
 
     // Create a BroadcastReceiver for ACTION_FOUND
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -35,65 +70,45 @@ public class MainActivity extends ActionBarActivity {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 // Add the name and address to an array adapter to show in a ListView
-
                 Log.i("Found", device.getName() + " found");
-                devices.add(device.getName() + "\n" + device.getAddress());
+
+                Toast.makeText(getApplicationContext(), "Found"+device.getName(), Toast.LENGTH_LONG).show();
+
+                //devices.add(device.getName() + "\n" + device.getAddress());
             }
         }
     };
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        final ToggleButton toggleBluetooth = (ToggleButton) findViewById(R.id.toggleBluetooth);
-
-        toggleBluetooth.setOnClickListener(toggleBluetoothListner);
-
-    }
-
-    View.OnClickListener toggleBluetoothListner = new View.OnClickListener() {
-        final ToggleButton toggleBluetooth = (ToggleButton) findViewById(R.id.toggleBluetooth);
-
-        @Override
-            public void onClick(View v) {
-                if (toggleBluetooth.isChecked()){
-                    switchBluetooth(OFF);
-                } else {
-                    switchBluetooth(ON);
+    private boolean switchBluetooth(boolean action){
+        if (mBluetoothAdapter != null){
+            if (action)
+                if (!mBluetoothAdapter.isEnabled()) {
+                    Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
-                toggleBluetooth.toggle();
-            }
-    };
-
-    private void switchBluetooth(int action){
-        if (action == ON){
-            mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (mBluetoothAdapter == null) {
-                // Device does not support Bluetooth
-                Toast.makeText(this, "No bluetooth available", Toast.LENGTH_LONG).show();
-                Log.i("No Support", "Device doesn't support bluetooth");
-                finish();
-                System.exit(0);
-            }
-
-            if (!mBluetoothAdapter.isEnabled()){
-                Log.i("Bt not enabled", "Bluetooth is not enabled");
-                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT); //calls onActivityResult
-            } else {
-                // Register the BroadcastReceiver
-                IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-                registerReceiver(mReceiver, filter);
-            }
+            else if ( mBluetoothAdapter.isEnabled() ) return mBluetoothAdapter.disable();
         } else {
-            //switch bt off
+            // No fucking BT support
+            Toast.makeText(getApplicationContext(), getString(R.string.no_bt_adapter), Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        if (requestCode == REQUEST_ENABLE_BT){
+            if (resultCode == RESULT_OK){
+                USER_ALLOWED_BT = 1;
+                startDiscovery();
+            } else {
+                // User denied access to bluetooth radio
+                Toast.makeText(getApplicationContext(), getString(R.string.bt_access_required), Toast.LENGTH_LONG).show();
+            }
         }
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        
+
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
@@ -111,22 +126,9 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        ToggleButton toggleBluetooth = (ToggleButton) findViewById(R.id.toggleBluetooth);
-        if (requestCode == REQUEST_ENABLE_BT) {
-            if(resultCode == RESULT_OK){
-                Log.i("Bt allowed", "User enabled bluetooth");
-            }
-            if (resultCode == RESULT_CANCELED) {
-                //Write your code if there's no result
-                Log.i("Bt not allowed","This app needs bt to function");
-                Toast.makeText(this, "We need bluetooth to provide awesome functionality", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-    protected void onDestroy(){
+    protected  void onDestroy(){
         super.onDestroy();
+        mBluetoothAdapter.cancelDiscovery();
         unregisterReceiver(mReceiver);
     }
 }
