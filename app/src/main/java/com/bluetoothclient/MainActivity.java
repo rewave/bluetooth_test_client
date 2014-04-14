@@ -21,6 +21,7 @@ import android.widget.Toast;
 public class MainActivity extends ActionBarActivity {
 
     private BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private final String TAG = "MainActivity";
     ArrayAdapter<String> devicesAdapter;
     ListView devicesListView;
     private final int REQUEST_ENABLE_BT = 1;
@@ -105,6 +106,7 @@ public class MainActivity extends ActionBarActivity {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 try {
+                    Log.i(TAG, device.getName() + " found");
                     devicesAdapter.add(device.getName() + "\n" + device.getAddress());
                 } catch (NullPointerException e){
                     Log.e("MainActivity", "Device name is null");
