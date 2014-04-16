@@ -95,19 +95,20 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private boolean startDiscovery(){
-        switchBluetooth(true);
-        if (mBluetoothAdapter.isDiscovering()) {
-            Toast.makeText(this, "Discovery in process", Toast.LENGTH_LONG).show();
-        } else {
-            Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
-            if (discoveryStarted) {
-                Log.i("MainActivity", "Discovery started");
-                Toast.makeText(MainActivity.this, "Discovery started", Toast.LENGTH_LONG).show();
+        if (switchBluetooth(true)) {
+            if (mBluetoothAdapter.isDiscovering()) {
+                Toast.makeText(this, "Discovery in process", Toast.LENGTH_LONG).show();
             } else {
-                Log.i("MainActivity", "Discovery could not be started");
-                Toast.makeText(MainActivity.this, "Discovery could not be started", Toast.LENGTH_LONG).show();
+                Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
+                if (discoveryStarted) {
+                    Log.i("MainActivity", "Discovery started");
+                    Toast.makeText(MainActivity.this, "Discovery started", Toast.LENGTH_LONG).show();
+                } else {
+                    Log.i("MainActivity", "Discovery could not be started");
+                    Toast.makeText(MainActivity.this, "Discovery could not be started", Toast.LENGTH_LONG).show();
+                }
+                return discoveryStarted;
             }
-            return discoveryStarted;
         }
         return false;
     }
