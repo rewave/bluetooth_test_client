@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -79,8 +80,9 @@ public class MainActivity extends ActionBarActivity {
         } else {
             // No fucking BT support
             Toast.makeText(MainActivity.this, getString(R.string.no_bt_adapter), Toast.LENGTH_LONG).show();
+            return false;
         }
-        return false;
+        return true;
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
@@ -96,6 +98,15 @@ public class MainActivity extends ActionBarActivity {
 
     private boolean startDiscovery(){
         if (switchBluetooth(true)) {
+
+            Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+            if (pairedDevices!= null) {
+                for (BluetoothDevice device : pairedDevices) {
+                    availableDevices.add(device);
+                    devicesAdapter.add(device.getName());
+                }
+            }
+
             if (mBluetoothAdapter.isDiscovering()) {
                 Toast.makeText(this, "Discovery in process", Toast.LENGTH_LONG).show();
             } else {
