@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
+import android.os.Looper;
+import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 
 
 public class ConnectedActivity extends ActionBarActivity {
@@ -30,9 +34,9 @@ public class ConnectedActivity extends ActionBarActivity {
     private String mac_address = null;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread = null;
+
     public static final int BOND_BONDED = 12;
 
-    private EditText chatMessage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,10 +58,11 @@ public class ConnectedActivity extends ActionBarActivity {
         Button pingButton = (Button) findViewById(R.id.pingButton);
         Button closeConnection = (Button) findViewById(R.id.closeConnection);
 
-        chatMessage = (EditText) findViewById(R.id.chatMessage);
+        EditText chatMessage = (EditText) findViewById(R.id.chatMessage);
 
         pingButton.setOnClickListener(onPingButtonClick);
         closeConnection.setOnClickListener(onCloseConnectionClick);
+
 
         mConnectThread = new ConnectThread(mBluetoothDevice);
         mConnectThread.start();
@@ -67,9 +72,11 @@ public class ConnectedActivity extends ActionBarActivity {
         @Override
         public void onClick(View v) {
             if (mConnectedThread != null) {
+                /*//
                 String c = chatMessage.getText().toString();
                 chatMessage.setText("");
                 mConnectedThread.write(c.getBytes());
+                //*/
             } else {
                 Log.i(TAG, "Connection to socket in process. Please wait");
             }
@@ -189,13 +196,11 @@ public class ConnectedActivity extends ActionBarActivity {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
-        private TextView chatMessage;
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
-            chatMessage = (TextView) findViewById(R.id.chatMessage);
 
             // Get the input and output streams, using temp objects because
             // member streams are final
@@ -210,7 +215,7 @@ public class ConnectedActivity extends ActionBarActivity {
 
         public void run() {
             byte[] buffer = new byte[1024];  // buffer store for the stream
-            int bytes; // bytes returned from read()
+            //int bytes; // bytes returned from read()
 
             Log.i(TAG, "ConnectedThread @run activated");
 
@@ -218,12 +223,12 @@ public class ConnectedActivity extends ActionBarActivity {
             while (true) {
                 try {
                     // Read from the InputStream
-                    bytes = mmInStream.read(buffer);
+                    //bytes = mmInStream.read(buffer);
                     // Send the obtained bytes to the UI activity
                     //mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
                     //Toast.makeText(MainActivity.this, new String(buffer, "UTF-8"), Toast.LENGTH_LONG).show();
-                    Log.i(TAG,"Received : "+ new String(buffer, "UTF-8"));
-                    chatMessage.setText(new String(buffer, "UTF-8"));
+                    String chatReply = new String(buffer, "UTF-8");
+                    Log.i(TAG,"Received : "+ chatReply);
 
                 } catch (IOException e) {
                     break;
@@ -245,4 +250,5 @@ public class ConnectedActivity extends ActionBarActivity {
             } catch (IOException e) { }
         }
     }
+
 }

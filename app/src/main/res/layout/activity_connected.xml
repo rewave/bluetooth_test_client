@@ -41,8 +41,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="chat message"
-            android:id="@+id/chatMessage" android:layout_below="@+id/pingButton" android:layout_alignParentLeft="true"
+            android:text="chat reply"
+            android:id="@+id/chatReply" android:layout_below="@+id/pingButton" android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true" android:layout_marginTop="52dp"
             android:layout_alignRight="@+id/pingButton" android:layout_alignEnd="@+id/pingButton"/>
 </RelativeLayout>
