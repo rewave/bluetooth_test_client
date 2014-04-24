@@ -9,16 +9,21 @@ import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -27,13 +32,14 @@ import java.util.logging.LogRecord;
 public class ConnectedActivity extends ActionBarActivity {
 
     private final String TAG = "ConnectedActivity";
-    private final String MY_UUID = "a1a738e0-c3b3-11e3-9c1a-0800200c9a66";
-    //private final String MY_UUID = "94f39d29-7d6d-437d-973b-fba39e49d4ee";
+    private List<UUID> candidateUUIDs= new ArrayList<UUID>();
     private final  BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private BluetoothDevice mBluetoothDevice;
     private String mac_address = null;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread = null;
+    private BluetoothConnector mBluetoothConnector;
+
 
     public static final int BOND_BONDED = 12;
 
@@ -55,45 +61,48 @@ public class ConnectedActivity extends ActionBarActivity {
         TextView deviceName = (TextView) findViewById(R.id.deviceName);
         deviceName.setText(mBluetoothDevice.getName());
 
-        Button pingButton = (Button) findViewById(R.id.pingButton);
-        Button closeConnection = (Button) findViewById(R.id.closeConnection);
-
         EditText chatMessage = (EditText) findViewById(R.id.chatMessage);
+        chatMessage.setOnEditorActionListener(onSendChatMessage);
 
-        pingButton.setOnClickListener(onPingButtonClick);
-        closeConnection.setOnClickListener(onCloseConnectionClick);
+        candidateUUIDs.add(UUID.fromString("a1a738e0-c3b3-11e3-9c1a-0800200c9a66"));
+        candidateUUIDs.add(UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"));
 
-
-        mConnectThread = new ConnectThread(mBluetoothDevice);
-        mConnectThread.start();
-    }
-
-    View.OnClickListener onPingButtonClick = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            if (mConnectedThread != null) {
-                /*//
-                String c = chatMessage.getText().toString();
-                chatMessage.setText("");
-                mConnectedThread.write(c.getBytes());
-                //*/
-            } else {
-                Log.i(TAG, "Connection to socket in process. Please wait");
-            }
+        mBluetoothConnector = new BluetoothConnector(mBluetoothDevice, mBluetoothAdapter, candidateUUIDs);
+        try {
+            mBluetoothConnector.connect();
+        } catch (IOException e) {
+            Toast.makeText(ConnectedActivity.this, "Unable to connect socket", Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+            Intent intent = new Intent(ConnectedActivity.this, MainActivity.class);
+            startActivity(intent);
         }
-    };
+        /*mConnectThread = new ConnectThread(mBluetoothDevice);
+        mConnectThread.start();*/
+    }
 
     View.OnClickListener onCloseConnectionClick = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+            mConnectThread.cancel();
             if (mConnectedThread != null) {
                 mConnectedThread.cancel();
                 Intent intent = new Intent(ConnectedActivity.this, MainActivity.class);
                 startActivity(intent);
             } else {
-                Log.i(TAG, "Connection to socket in process. Please wait");
+                Log.d(TAG, "Connection to socket in process. Please wait");
             }
+        }
+    };
 
+    TextView.OnEditorActionListener onSendChatMessage = new TextView.OnEditorActionListener() {
+        @Override
+        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+            if(actionId == EditorInfo.IME_ACTION_SEND){
+                String c = v.getText().toString();
+                v.setText("");
+                mConnectedThread.write(c.getBytes());
+            }
+            return false;
         }
     };
 
@@ -134,7 +143,7 @@ public class ConnectedActivity extends ActionBarActivity {
             // Get a BluetoothSocket to connect with the given BluetoothDevice
             try {
                 // MY_UUID is the app's UUID string, also used by the server code
-                tmp = device.createRfcommSocketToServiceRecord(UUID.fromString(MY_UUID));
+                tmp = device.createRfcommSocketToServiceRecord(UUID.fromString("11"));
             } catch (IOException e) {
 
             }
@@ -145,27 +154,23 @@ public class ConnectedActivity extends ActionBarActivity {
             // Cancel discovery because it will slow down the connection
             mBluetoothAdapter.cancelDiscovery();
 
-            try {
-                // Connect the device through the socket. This will block
-                // until it succeeds or throws an exception
-                Log.d(TAG, "Connecting to socket");
-                mmSocket.connect();
-            } catch (IOException connectException) {
-                // Unable to connect; close the socket and get out
-                Log.e(TAG, "Unable to connect socket, IOException");
+            Log.d(TAG, "Entering socket connect loop");
+            while(true){
                 try {
-                    mmSocket.close();
-                } catch (IOException closeException) { }
-                return;
+                    mmSocket.connect();
+                    break;
+                } catch (IOException connectException){
+                    Log.d(TAG, "Unable to connect, IOException, Retrying");
+                }
             }
+            Log.d(TAG, "Socket Connected");
 
-            // Do work to manage the connection (in a separate thread)
             while(true) {
                 bondState = mmDevice.getBondState();
                 if (bondState == BOND_BONDING) {
-                    Log.i(TAG, "Bonding in process");
+                    Log.d(TAG, "Bonding in process");
                 } else if (bondState == BOND_BONDED) {
-                    Log.i(TAG, "Bond complete");
+                    Log.d(TAG, "Bond complete");
                     break;
                 }
             }
@@ -188,7 +193,7 @@ public class ConnectedActivity extends ActionBarActivity {
                 break;
             }
         }
-        Log.i(TAG, "Paired. You may now kiss the bride.");
+        Log.d(TAG, "Paired. You may now kiss the bride.");
         mConnectedThread.start();
     }
 
@@ -217,7 +222,7 @@ public class ConnectedActivity extends ActionBarActivity {
             byte[] buffer = new byte[1024];  // buffer store for the stream
             //int bytes; // bytes returned from read()
 
-            Log.i(TAG, "ConnectedThread @run activated");
+            Log.d(TAG, "ConnectedThread @run activated");
 
             // Keep listening to the InputStream until an exception occurs
             while (true) {
@@ -228,7 +233,7 @@ public class ConnectedActivity extends ActionBarActivity {
                     //mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
                     //Toast.makeText(MainActivity.this, new String(buffer, "UTF-8"), Toast.LENGTH_LONG).show();
                     String chatReply = new String(buffer, "UTF-8");
-                    Log.i(TAG,"Received : "+ chatReply);
+                    Log.i(TAG, "Received : " + chatReply);
 
                 } catch (IOException e) {
                     break;

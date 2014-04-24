@@ -22,7 +22,6 @@ public class BluetoothConnector {
 
     private BluetoothSocketWrapper bluetoothSocket;
     private BluetoothDevice device;
-    private boolean secure;
     private BluetoothAdapter adapter;
     private List<UUID> uuidCandidates;
     private int candidate;
@@ -30,14 +29,12 @@ public class BluetoothConnector {
 
     /**
      * @param device the device
-     * @param secure if connection should be done via a secure socket
      * @param adapter the Android BT adapter
      * @param uuidCandidates a list of UUIDs. if null or empty, the Serial PP id is used
      */
-    public BluetoothConnector(BluetoothDevice device, boolean secure, BluetoothAdapter adapter,
+    public BluetoothConnector(BluetoothDevice device, BluetoothAdapter adapter,
                               List<UUID> uuidCandidates) {
         this.device = device;
-        this.secure = secure;
         this.adapter = adapter;
         this.uuidCandidates = uuidCandidates;
 
@@ -89,12 +86,8 @@ public class BluetoothConnector {
         BluetoothSocket tmp;
         UUID uuid = uuidCandidates.get(candidate++);
 
-        Log.i("BT", "Attempting to connect to Protocol: "+ uuid);
-        if (secure) {
-            tmp = device.createRfcommSocketToServiceRecord(uuid);
-        } else {
-            tmp = device.createInsecureRfcommSocketToServiceRecord(uuid);
-        }
+        Log.d("BT", "Attempting to connect to Protocol: "+ uuid);
+        tmp = device.createRfcommSocketToServiceRecord(uuid);
         bluetoothSocket = new NativeBluetoothSocket(tmp);
 
         return true;
@@ -117,7 +110,6 @@ public class BluetoothConnector {
         BluetoothSocket getUnderlyingSocket();
 
     }
-
 
     public static class NativeBluetoothSocket implements BluetoothSocketWrapper {
 

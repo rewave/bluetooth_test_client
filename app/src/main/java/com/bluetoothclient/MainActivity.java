@@ -63,8 +63,14 @@ public class MainActivity extends ActionBarActivity {
         public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
             mBluetoothAdapter.cancelDiscovery();
             Intent intent = new Intent(MainActivity.this, ConnectedActivity.class);
-            intent.putExtra("MAC_ADDRESS", availableDevices.get(position).getAddress());
-            startActivity(intent);
+            BluetoothDevice selectedDevice = availableDevices.get(position);
+            if (selectedDevice != null){
+                intent.putExtra("MAC_ADDRESS", selectedDevice.getAddress());
+                startActivity(intent);
+            } else {
+                Toast.makeText(MainActivity.this, "Device Not in range", Toast.LENGTH_LONG).show();
+            }
+
             return true;
         }
     };
@@ -97,11 +103,17 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private boolean startDiscovery(){
+        if (availableDevices != null){
+            availableDevices.clear();
+            devicesAdapter.clear();
+        }
+
         if (switchBluetooth(true)) {
 
             Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
             if (pairedDevices!= null) {
                 for (BluetoothDevice device : pairedDevices) {
+                    Log.d(TAG, "Added already paired device "+ device.getName());
                     availableDevices.add(device);
                     devicesAdapter.add(device.getName());
                 }
@@ -112,10 +124,10 @@ public class MainActivity extends ActionBarActivity {
             } else {
                 Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
                 if (discoveryStarted) {
-                    Log.i("MainActivity", "Discovery started");
+                    Log.d("MainActivity", "Discovery started");
                     Toast.makeText(MainActivity.this, "Discovery started", Toast.LENGTH_LONG).show();
                 } else {
-                    Log.i("MainActivity", "Discovery could not be started");
+                    Log.d("MainActivity", "Discovery could not be started");
                     Toast.makeText(MainActivity.this, "Discovery could not be started", Toast.LENGTH_LONG).show();
                 }
                 return discoveryStarted;
@@ -128,17 +140,23 @@ public class MainActivity extends ActionBarActivity {
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+
+            //When user allows bluetooth usage, start discovering
+            if(BluetoothAdapter.ACTION_REQUEST_ENABLE.equals(action)){
+                startDiscovery();
+            }
+
             // When discovery finds a device
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 try {
-                    Log.i(TAG, device.getName() + " found");
+                    Log.d(TAG, device.getName() + " found");
                     if (availableDevices.indexOf(device) == -1) {
                         availableDevices.add(device);
                         devicesAdapter.add(device.getName());
                     } else {
-                        Log.i(TAG, "Device already in list");
+                        Log.d(TAG, "Device already in list");
                     }
 
                 } catch (NullPointerException e){
@@ -149,13 +167,11 @@ public class MainActivity extends ActionBarActivity {
 
             if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
                 //Toast.makeText(MainActivity.this, "Discovery complete", Toast.LENGTH_LONG).show();
-                Log.i("MainActivity", "Discovery Finished");
+                Log.d("MainActivity", "Discovery Finished");
                 findViewById(R.id.discover).setEnabled(true);
             }
 
             if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.endsWith(action)){
-                availableDevices.clear();
-                devicesAdapter.clear();
                 findViewById(R.id.discover).setEnabled(false);
             }
         }
