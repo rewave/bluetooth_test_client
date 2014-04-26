@@ -15,20 +15,10 @@
             android:text="Large Text"
             android:id="@+id/deviceName"
             android:layout_alignParentTop="true" android:layout_centerHorizontal="true"/>
-    <EditText
+    <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/chatMessage"
-            android:imeOptions="actionSend"
-            android:layout_below="@+id/deviceName" android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true" android:layout_marginTop="37dp"
-            android:layout_alignParentRight="true" android:layout_alignParentEnd="true"/>
-    <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:id="@+id/chatReply"
-            android:layout_below="@+id/chatMessage" android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true" android:layout_marginTop="175dp" android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true"/>
+            android:text="Close Connection"
+            android:id="@+id/closeConnection"
+            android:layout_centerVertical="true" android:layout_centerHorizontal="true"/>
 </RelativeLayout>
