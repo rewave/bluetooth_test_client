@@ -3,7 +3,10 @@ package com.bluetoothclient;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.os.Looper;
 import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
@@ -39,8 +42,7 @@ public class ConnectedActivity extends ActionBarActivity {
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread = null;
     private BluetoothConnector mBluetoothConnector;
-
-
+    private ConnectToDevice connectToDevice;
     public static final int BOND_BONDED = 12;
 
 
@@ -67,32 +69,14 @@ public class ConnectedActivity extends ActionBarActivity {
         candidateUUIDs.add(UUID.fromString("a1a738e0-c3b3-11e3-9c1a-0800200c9a66"));
         candidateUUIDs.add(UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"));
 
-        mBluetoothConnector = new BluetoothConnector(mBluetoothDevice, mBluetoothAdapter, candidateUUIDs);
-        try {
-            mBluetoothConnector.connect();
-        } catch (IOException e) {
-            Toast.makeText(ConnectedActivity.this, "Unable to connect socket", Toast.LENGTH_LONG).show();
-            e.printStackTrace();
-            Intent intent = new Intent(ConnectedActivity.this, MainActivity.class);
-            startActivity(intent);
-        }
+        connectToDevice = new ConnectToDevice(mBluetoothDevice, mBluetoothAdapter, candidateUUIDs);
+        connectToDevice.start();
+
+
+
         /*mConnectThread = new ConnectThread(mBluetoothDevice);
         mConnectThread.start();*/
     }
-
-    View.OnClickListener onCloseConnectionClick = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            mConnectThread.cancel();
-            if (mConnectedThread != null) {
-                mConnectedThread.cancel();
-                Intent intent = new Intent(ConnectedActivity.this, MainActivity.class);
-                startActivity(intent);
-            } else {
-                Log.d(TAG, "Connection to socket in process. Please wait");
-            }
-        }
-    };
 
     TextView.OnEditorActionListener onSendChatMessage = new TextView.OnEditorActionListener() {
         @Override
@@ -184,7 +168,6 @@ public class ConnectedActivity extends ActionBarActivity {
             } catch (IOException e) { }
         }
     }
-
     private void manageConnectedSocket(BluetoothSocket mSocket){
         mConnectedThread = new ConnectedThread(mSocket);
 
@@ -196,7 +179,6 @@ public class ConnectedActivity extends ActionBarActivity {
         Log.d(TAG, "Paired. You may now kiss the bride.");
         mConnectedThread.start();
     }
-
     private class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
@@ -254,6 +236,78 @@ public class ConnectedActivity extends ActionBarActivity {
                 mmSocket.close();
             } catch (IOException e) { }
         }
+    }
+
+    private class ConnectToDevice extends Thread{
+        private  BluetoothConnector bluetoothConnector;
+        private BluetoothDevice bluetoothDevice;
+        private  BluetoothAdapter bluetoothAdapter;
+        private List<UUID> candidateUUIDs;
+
+        public ConnectToDevice(BluetoothDevice device, BluetoothAdapter adpater, List<UUID> UUIDs){
+            bluetoothDevice = device;
+            bluetoothAdapter = adpater;
+            candidateUUIDs = UUIDs;
+        }
+
+        public void run(){
+            bluetoothConnector = new BluetoothConnector(bluetoothDevice, bluetoothAdapter, candidateUUIDs);
+            try {
+                bluetoothConnector.connect();
+                Log.d(TAG, "Socket connected");
+            } catch (IOException e) {
+                e.printStackTrace();
+                //TODO : send failure info to UI thread
+            }
+        }
+
+        public BluetoothConnector getBluetoothConnector(){
+            return bluetoothConnector;
+        }
+
+        public void close(){
+            try {
+                bluetoothConnector.close();
+            } catch (IOException e){
+                Log.d(TAG, "Unable to close Socket");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private class StreamToServer extends Thread{
+        private BluetoothConnector bluetoothConnector;
+        private OutputStream outStream;
+        private SensorManager sensorManager;
+        private Sensor accelrometer;
+
+        public StreamToServer(BluetoothConnector bluetoothConnector){
+            this.bluetoothConnector = bluetoothConnector;
+            try {
+                this.outStream = bluetoothConnector.getOutputStream();
+            } catch (IOException e){
+                Log.d(TAG, "Unable to get output stream");
+                e.printStackTrace();
+            }
+            sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            accelrometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
+
+        public void run() {
+            while (true) {
+                try {
+                    //outStream.write();
+                    Thread.sleep(500);
+                } catch(InterruptedException e){
+                    Log.d(TAG, "run Interrupted");
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    protected void OnDestroy(){
+        connectToDevice.close();
     }
 
 }

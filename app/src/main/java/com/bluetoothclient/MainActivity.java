@@ -23,6 +23,7 @@ public class MainActivity extends ActionBarActivity {
     private final String TAG = "MainActivity";
     private final int REQUEST_ENABLE_BT = 1;
     private final  BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    List<BluetoothDevice> pairedDevices = new ArrayList<BluetoothDevice>(mBluetoothAdapter.getBondedDevices());
     private List<BluetoothDevice> availableDevices;
     private ArrayAdapter<String> devicesAdapter;
     private ListView devicesListView;
@@ -48,7 +49,7 @@ public class MainActivity extends ActionBarActivity {
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
 
-        registerReceiver(mReceiver, filter); // Don't forget to unregister during onDestroy
+        registerReceiver(BluetoothReceiver, filter); // Don't forget to unregister during onDestroy
     }
 
     View.OnClickListener onDiscoveryCLick = new View.OnClickListener() {
@@ -64,13 +65,8 @@ public class MainActivity extends ActionBarActivity {
             mBluetoothAdapter.cancelDiscovery();
             Intent intent = new Intent(MainActivity.this, ConnectedActivity.class);
             BluetoothDevice selectedDevice = availableDevices.get(position);
-            if (selectedDevice != null){
-                intent.putExtra("MAC_ADDRESS", selectedDevice.getAddress());
-                startActivity(intent);
-            } else {
-                Toast.makeText(MainActivity.this, "Device Not in range", Toast.LENGTH_LONG).show();
-            }
-
+            intent.putExtra("MAC_ADDRESS", selectedDevice.getAddress());
+            startActivity(intent);
             return true;
         }
     };
@@ -91,17 +87,6 @@ public class MainActivity extends ActionBarActivity {
         return true;
     }
 
-    protected void onActivityResult(int requestCode, int resultCode, Intent data){
-        if (requestCode == REQUEST_ENABLE_BT){
-            if (resultCode == RESULT_OK) startDiscovery();
-            else {
-                // User denied access to bluetooth radio
-                findViewById(R.id.discover).setEnabled(true);
-                Toast.makeText(MainActivity.this, getString(R.string.bt_access_required), Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
     private boolean startDiscovery(){
         if (availableDevices != null){
             availableDevices.clear();
@@ -109,16 +94,6 @@ public class MainActivity extends ActionBarActivity {
         }
 
         if (switchBluetooth(true)) {
-
-            Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-            if (pairedDevices!= null) {
-                for (BluetoothDevice device : pairedDevices) {
-                    Log.d(TAG, "Added already paired device "+ device.getName());
-                    availableDevices.add(device);
-                    devicesAdapter.add(device.getName());
-                }
-            }
-
             if (mBluetoothAdapter.isDiscovering()) {
                 Toast.makeText(this, "Discovery in process", Toast.LENGTH_LONG).show();
             } else {
@@ -137,7 +112,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     // Create a BroadcastReceiver for ACTION_FOUND
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver BluetoothReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
 
@@ -150,6 +125,11 @@ public class MainActivity extends ActionBarActivity {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                int deviceIndex = pairedDevices.indexOf(device);
+                if (deviceIndex != -1){
+                    //if device is paired, list the paired version
+                    device = pairedDevices.get(deviceIndex);
+                }
                 try {
                     Log.d(TAG, device.getName() + " found");
                     if (availableDevices.indexOf(device) == -1) {
@@ -179,7 +159,6 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
@@ -200,7 +179,7 @@ public class MainActivity extends ActionBarActivity {
     protected  void onDestroy(){
         super.onDestroy();
         if (mBluetoothAdapter.isDiscovering()) mBluetoothAdapter.cancelDiscovery();
-        unregisterReceiver(mReceiver);
+        unregisterReceiver(BluetoothReceiver);
     }
 }
 

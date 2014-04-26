@@ -78,6 +78,14 @@ public class BluetoothConnector {
         return bluetoothSocket;
     }
 
+    public void close() throws IOException{
+        bluetoothSocket.close();
+    }
+
+    public OutputStream getOutputStream() throws IOException{
+        return bluetoothSocket.getOutputStream();
+    }
+
     private boolean selectSocket() throws IOException {
         if (candidate >= uuidCandidates.size()) {
             return false;
