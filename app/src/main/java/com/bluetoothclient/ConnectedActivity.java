@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Looper;
 import android.os.Message;
@@ -32,7 +34,7 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
 
-public class ConnectedActivity extends ActionBarActivity {
+public class ConnectedActivity extends ActionBarActivity implements SensorEventListener {
 
     private final String TAG = "ConnectedActivity";
     private List<UUID> candidateUUIDs= new ArrayList<UUID>();
@@ -43,6 +45,9 @@ public class ConnectedActivity extends ActionBarActivity {
     private ConnectedThread mConnectedThread = null;
     private BluetoothConnector mBluetoothConnector;
     private ConnectToDevice connectToDevice;
+    private StreamToServer streamToServer;
+    private SensorManager sensorManager;
+    private Sensor accelrometer;
     public static final int BOND_BONDED = 12;
 
 
@@ -72,8 +77,18 @@ public class ConnectedActivity extends ActionBarActivity {
         connectToDevice = new ConnectToDevice(mBluetoothDevice, mBluetoothAdapter, candidateUUIDs);
         connectToDevice.start();
 
+        try {
+            connectToDevice.join();
+        } catch (InterruptedException e){
+            Log.d(TAG, "Connect to device interrupted");
+            e.printStackTrace();
+        }
 
+        streamToServer = new StreamToServer(connectToDevice.getBluetoothConnector());
+        streamToServer.start();
 
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        accelrometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         /*mConnectThread = new ConnectThread(mBluetoothDevice);
         mConnectThread.start();*/
     }
@@ -89,6 +104,30 @@ public class ConnectedActivity extends ActionBarActivity {
             return false;
         }
     };
+
+    @Override
+    public final void onSensorChanged(SensorEvent event) {
+        byte[] b = String.valueOf(event.timestamp+','+event.values[0]+','+event.values[1]+','+event.values[2]).getBytes();
+        streamToServer.write(b);
+        //Log.d(TAG, "Got sensor event" + String.valueOf(event.timestamp)+ " : " + event.values[0]);
+    }
+
+    @Override
+    public final void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Do something here if sensor accuracy changes.
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, accelrometer, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(this);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -276,32 +315,27 @@ public class ConnectedActivity extends ActionBarActivity {
     }
 
     private class StreamToServer extends Thread{
-        private BluetoothConnector bluetoothConnector;
         private OutputStream outStream;
-        private SensorManager sensorManager;
-        private Sensor accelrometer;
 
         public StreamToServer(BluetoothConnector bluetoothConnector){
-            this.bluetoothConnector = bluetoothConnector;
             try {
                 this.outStream = bluetoothConnector.getOutputStream();
             } catch (IOException e){
                 Log.d(TAG, "Unable to get output stream");
                 e.printStackTrace();
             }
-            sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-            accelrometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         }
 
         public void run() {
-            while (true) {
-                try {
-                    //outStream.write();
-                    Thread.sleep(500);
-                } catch(InterruptedException e){
-                    Log.d(TAG, "run Interrupted");
-                    e.printStackTrace();
-                }
+            //TODO : Timeout some ms and ensure if the connection is up
+        }
+
+        public void write(byte[] data){
+            try {
+                outStream.write(data);
+            } catch (IOException e){
+                Log.d(TAG, "Write Thread IOException");
+                e.printStackTrace();
             }
         }
     }
