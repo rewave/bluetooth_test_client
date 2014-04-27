@@ -98,17 +98,17 @@ public class MainActivity extends ActionBarActivity {
 
         if (mBluetoothAdapter.isEnabled()) {
             if (mBluetoothAdapter.isDiscovering()) {
-                Toast.makeText(this, "Discovery in process", Toast.LENGTH_LONG).show();
-            } else {
-                Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
-                if (discoveryStarted) {
-                    Log.d("MainActivity", "Discovery started");
-                } else {
-                    Log.d("MainActivity", "Discovery could not be started");
-                    Toast.makeText(MainActivity.this, "Discovery could not be started", Toast.LENGTH_LONG).show();
-                }
-                return discoveryStarted;
+                mBluetoothAdapter.cancelDiscovery();
             }
+            Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
+            if (discoveryStarted) {
+                Log.d("MainActivity", "Discovery started");
+            } else {
+                Log.d("MainActivity", "Discovery could not be started");
+                Toast.makeText(MainActivity.this, "Discovery could not be started", Toast.LENGTH_LONG).show();
+            }
+            return discoveryStarted;
+
         } else {
             switchBluetooth(true);
         }
@@ -122,7 +122,6 @@ public class MainActivity extends ActionBarActivity {
             if (resultCode == RESULT_OK) startDiscovery();
             else Toast.makeText(MainActivity.this, "We need bluetooth to give you superpowers", Toast.LENGTH_LONG).show();
         }
-
     }
 
     // Create a BroadcastReceiver for ACTION_FOUND

@@ -2,18 +2,19 @@ package com.bluetoothclient;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.*;
-import android.widget.Button;
-import android.widget.TextView;
+import android.widget.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,14 +28,15 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
 
     private final String TAG = "ConnectedActivity";
     private List<UUID> candidateUUIDs= new ArrayList<UUID>();
-    private final  BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-    private BluetoothDevice mBluetoothDevice;
+    private final  BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private  BluetoothConnector bluetoothConnector;
+    private BluetoothDevice bluetoothDevice;
     private String mac_address = null;
-    private ConnectToDevice connectToDevice;
     private StreamToServer streamToServer;
     private SensorManager sensorManager;
     private Sensor accelrometer;
     private int t=0;
+    private boolean streamPaused = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,11 +49,16 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
         }
 
         if (mac_address != null){
-            mBluetoothDevice = mBluetoothAdapter.getRemoteDevice(mac_address);
+            bluetoothDevice = bluetoothAdapter.getRemoteDevice(mac_address);
         }
 
+        findViewById(R.id.closeConnection).setEnabled(false);
+
+        ToggleButton toggleStream = (ToggleButton) findViewById(R.id.toggleStream);
+        toggleStream.setOnCheckedChangeListener(onPauseStreamToggle);
+
         TextView deviceName = (TextView) findViewById(R.id.deviceName);
-        deviceName.setText(mBluetoothDevice.getName());
+        deviceName.setText(bluetoothDevice.getName());
 
         Button closeConnection = (Button) findViewById(R.id.closeConnection);
         closeConnection.setOnClickListener(onCloseConnectionClick);
@@ -59,31 +66,39 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
         candidateUUIDs.add(UUID.fromString("a1a738e0-c3b3-11e3-9c1a-0800200c9a66"));
         candidateUUIDs.add(UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"));
 
-        connectToDevice = new ConnectToDevice(mBluetoothDevice, mBluetoothAdapter, candidateUUIDs);
-        connectToDevice.start();
-
-        try {
-            connectToDevice.join();
-        } catch (InterruptedException e){
-            Log.d(TAG, "Connect to device interrupted");
-            e.printStackTrace();
-        }
-
-        streamToServer = new StreamToServer(connectToDevice.getBluetoothConnector());
-        streamToServer.start();
-
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelrometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
+        bluetoothConnector = new BluetoothConnector(bluetoothDevice, bluetoothAdapter, candidateUUIDs);
+        new ConnectToDevice().execute(bluetoothConnector);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
+    CompoundButton.OnCheckedChangeListener onPauseStreamToggle = new CompoundButton.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            if(isChecked){
+                streamPaused = false;
+            } else {
+                streamPaused = true;
+            }
+        }
+    };
 
     View.OnClickListener onCloseConnectionClick = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            streamToServer.write("quit".getBytes());
-            Intent intent = new Intent(ConnectedActivity.this, MainActivity.class);
-            startActivity(intent);
+            if (streamToServer != null) {
+                streamToServer.write("quit".getBytes());
+                try {
+                    bluetoothConnector.close();
+                } catch (IOException e){
+                    Log.d(TAG, "IOException occured while closing connection");
+                    e.printStackTrace();
+                }
+                Intent intent = new Intent(ConnectedActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
         }
     };
 
@@ -91,7 +106,9 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
     public final void onSensorChanged(SensorEvent event) {
         t = t+1;
         byte[] b = (String.valueOf(t) + "," +String.valueOf(event.values[0]) + "," + String.valueOf(event.values[1]) + "," + String.valueOf(event.values[2])).getBytes();
-        streamToServer.write(b);
+        if (streamToServer != null && !streamPaused) {
+            streamToServer.write(b);
+        }
     }
 
     @Override
@@ -113,7 +130,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        
+
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.connected, menu);
         return true;
@@ -131,40 +148,31 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
         return super.onOptionsItemSelected(item);
     }
 
-    private class ConnectToDevice extends Thread{
-        private  BluetoothConnector bluetoothConnector;
-        private BluetoothDevice bluetoothDevice;
-        private  BluetoothAdapter bluetoothAdapter;
-        private List<UUID> candidateUUIDs;
-
-        public ConnectToDevice(BluetoothDevice device, BluetoothAdapter adpater, List<UUID> UUIDs){
-            bluetoothDevice = device;
-            bluetoothAdapter = adpater;
-            candidateUUIDs = UUIDs;
-            bluetoothConnector = new BluetoothConnector(bluetoothDevice, bluetoothAdapter, candidateUUIDs);
-        }
-
-        public void run(){
+    private class ConnectToDevice extends AsyncTask<BluetoothConnector, Void, BluetoothConnector>{
+        @Override
+        protected BluetoothConnector doInBackground(BluetoothConnector... params){
             try {
-                bluetoothConnector.connect();
+                params[0].connect();
                 Log.d(TAG, "Socket connected");
             } catch (IOException e) {
                 e.printStackTrace();
                 //TODO : send failure info to UI thread
             }
+            return params[0];
         }
 
-        public BluetoothConnector getBluetoothConnector(){
-            return bluetoothConnector;
+        @Override
+        protected void onPreExecute(){
+            Toast.makeText(ConnectedActivity.this, "Initiating device connection", Toast.LENGTH_LONG).show();
         }
 
-        public void close(){
-            try {
-                bluetoothConnector.close();
-            } catch (IOException e){
-                Log.d(TAG, "Unable to close Socket");
-                e.printStackTrace();
-            }
+        @Override
+        protected void onPostExecute(BluetoothConnector bluetoothConnector) {
+            Log.d(TAG, "Connected to device, getting input stream");
+            Toast.makeText(ConnectedActivity.this, "Connected to device", Toast.LENGTH_LONG).show();
+            findViewById(R.id.closeConnection).setEnabled(true);
+            streamToServer = new StreamToServer(bluetoothConnector);
+            streamToServer.start();
         }
     }
 
@@ -197,8 +205,8 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
     }
 
     protected void OnDestroy(){
-        connectToDevice.close();
-        mBluetoothAdapter.cancelDiscovery();
+        bluetoothAdapter.cancelDiscovery();
     }
 
 }
+

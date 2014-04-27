@@ -20,5 +20,11 @@
             android:layout_height="wrap_content"
             android:text="Close Connection"
             android:id="@+id/closeConnection"
-            android:layout_centerVertical="true" android:layout_centerHorizontal="true"/>
+            android:layout_alignParentBottom="true" android:layout_centerHorizontal="true"/>
+    <ToggleButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="STREAM"
+            android:id="@+id/toggleStream"
+            android:layout_centerVertical="true" android:layout_centerHorizontal="true" android:checked="true"/>
 </RelativeLayout>
