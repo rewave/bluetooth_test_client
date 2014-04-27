@@ -2,33 +2,25 @@ package com.bluetoothclient;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.Looper;
-import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.*;
-import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
+
 
 
 public class ConnectedActivity extends ActionBarActivity implements SensorEventListener {
@@ -110,7 +102,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, accelrometer, SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(this, accelrometer, SensorManager.SENSOR_DELAY_GAME);
     }
 
     @Override
@@ -206,6 +198,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
 
     protected void OnDestroy(){
         connectToDevice.close();
+        mBluetoothAdapter.cancelDiscovery();
     }
 
 }

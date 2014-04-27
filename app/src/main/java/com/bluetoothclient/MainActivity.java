@@ -77,6 +77,9 @@ public class MainActivity extends ActionBarActivity {
                 if (!mBluetoothAdapter.isEnabled()) {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                } else {
+                    //bt is on
+                    return true;
                 }
             } else if ( mBluetoothAdapter.isEnabled() ) return mBluetoothAdapter.disable();
         } else {
@@ -93,22 +96,33 @@ public class MainActivity extends ActionBarActivity {
             devicesAdapter.clear();
         }
 
-        if (switchBluetooth(true)) {
+        if (mBluetoothAdapter.isEnabled()) {
             if (mBluetoothAdapter.isDiscovering()) {
                 Toast.makeText(this, "Discovery in process", Toast.LENGTH_LONG).show();
             } else {
                 Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
                 if (discoveryStarted) {
                     Log.d("MainActivity", "Discovery started");
-                    Toast.makeText(MainActivity.this, "Discovery started", Toast.LENGTH_LONG).show();
                 } else {
                     Log.d("MainActivity", "Discovery could not be started");
                     Toast.makeText(MainActivity.this, "Discovery could not be started", Toast.LENGTH_LONG).show();
                 }
                 return discoveryStarted;
             }
+        } else {
+            switchBluetooth(true);
         }
         return false;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == REQUEST_ENABLE_BT){
+            if (resultCode == RESULT_OK) startDiscovery();
+            else Toast.makeText(MainActivity.this, "We need bluetooth to give you superpowers", Toast.LENGTH_LONG).show();
+        }
+
     }
 
     // Create a BroadcastReceiver for ACTION_FOUND
@@ -118,7 +132,6 @@ public class MainActivity extends ActionBarActivity {
 
             //When user allows bluetooth usage, start discovering
             if(BluetoothAdapter.ACTION_REQUEST_ENABLE.equals(action)){
-                startDiscovery();
             }
 
             // When discovery finds a device
@@ -146,8 +159,7 @@ public class MainActivity extends ActionBarActivity {
             }
 
             if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
-                //Toast.makeText(MainActivity.this, "Discovery complete", Toast.LENGTH_LONG).show();
-                Log.d("MainActivity", "Discovery Finished");
+                Log.d(TAG, "Discovery Finished");
                 findViewById(R.id.discover).setEnabled(true);
             }
 
