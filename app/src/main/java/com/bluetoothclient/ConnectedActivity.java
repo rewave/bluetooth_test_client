@@ -2,7 +2,6 @@ package com.bluetoothclient;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
@@ -34,9 +33,10 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
     private String mac_address = null;
     private StreamToServer streamToServer;
     private SensorManager sensorManager;
-    private Sensor accelrometer;
+    private Sensor accelerometer;
     private int t=0;
     private boolean streamPaused = false;
+    private float threshold;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,17 +63,38 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
         Button closeConnection = (Button) findViewById(R.id.closeConnection);
         closeConnection.setOnClickListener(onCloseConnectionClick);
 
+        SeekBar threshold = (SeekBar) findViewById(R.id.threshold);
+        threshold.setOnSeekBarChangeListener(onThresholdChange);
+
         candidateUUIDs.add(UUID.fromString("a1a738e0-c3b3-11e3-9c1a-0800200c9a66"));
         candidateUUIDs.add(UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"));
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        accelrometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         bluetoothConnector = new BluetoothConnector(bluetoothDevice, bluetoothAdapter, candidateUUIDs);
         new ConnectToDevice().execute(bluetoothConnector);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
+
+    SeekBar.OnSeekBarChangeListener onThresholdChange = new SeekBar.OnSeekBarChangeListener() {
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            threshold = (float) progress;
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+
+        }
+    };
+
     CompoundButton.OnCheckedChangeListener onPauseStreamToggle = new CompoundButton.OnCheckedChangeListener() {
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -93,7 +114,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
                 try {
                     bluetoothConnector.close();
                 } catch (IOException e){
-                    Log.d(TAG, "IOException occured while closing connection");
+                    Log.d(TAG, "IOException occurred while closing connection");
                     e.printStackTrace();
                 }
                 Intent intent = new Intent(ConnectedActivity.this, MainActivity.class);
@@ -104,10 +125,14 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
 
     @Override
     public final void onSensorChanged(SensorEvent event) {
-        t = t+1;
-        byte[] b = (String.valueOf(t) + "," +String.valueOf(event.values[0]) + "," + String.valueOf(event.values[1]) + "," + String.valueOf(event.values[2])).getBytes();
-        if (streamToServer != null && !streamPaused) {
-            streamToServer.write(b);
+        t = t+1; //relative timestamps
+        byte[] data = (String.valueOf(t) + "," +String.valueOf(event.values[0]) + "," + String.valueOf(event.values[1]) + "," + String.valueOf(event.values[2])).getBytes();
+        float mod = 0;
+        for(int i=0; i<3; i++){
+            mod += event.values[i]*event.values[i];
+        }
+        if (streamToServer != null && !streamPaused && mod > threshold) {
+            streamToServer.write(data);
         }
     }
 
@@ -119,7 +144,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, accelrometer, SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
     }
 
     @Override

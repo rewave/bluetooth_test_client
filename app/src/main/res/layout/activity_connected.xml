@@ -20,11 +20,23 @@
             android:layout_height="wrap_content"
             android:text="Close Connection"
             android:id="@+id/closeConnection"
-            android:layout_alignParentBottom="true" android:layout_centerHorizontal="true"/>
+            android:layout_alignParentBottom="true" android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"/>
     <ToggleButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="STREAM"
             android:id="@+id/toggleStream"
-            android:layout_centerVertical="true" android:layout_centerHorizontal="true" android:checked="true"/>
+            android:checked="true"
+            android:layout_alignTop="@+id/closeConnection" android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"/>
+    <SeekBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/threshold"
+            android:layout_marginTop="137dp"
+            android:layout_below="@+id/deviceName" android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" android:layout_alignRight="@+id/closeConnection"
+            android:layout_alignEnd="@+id/closeConnection" android:indeterminate="false" android:progress="150"
+            android:max="300"/>
 </RelativeLayout>
