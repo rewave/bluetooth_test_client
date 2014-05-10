@@ -25,4 +25,5 @@ dependencies {
         // exclusion is not required, but generally a good idea.
         exclude group: 'com.google.android', module: 'support-v4'
     }
+    compile 'com.github.chrisbanes.actionbarpulltorefresh:extra-abc:+'
 }

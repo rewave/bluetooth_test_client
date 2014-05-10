@@ -15,6 +15,10 @@ import android.view.View;
 import android.widget.*;
 import de.keyboardsurfer.android.widget.crouton.Crouton;
 import de.keyboardsurfer.android.widget.crouton.Style;
+import uk.co.senab.actionbarpulltorefresh.extras.actionbarcompat.PullToRefreshLayout;
+import uk.co.senab.actionbarpulltorefresh.library.ActionBarPullToRefresh;
+import uk.co.senab.actionbarpulltorefresh.library.listeners.OnRefreshListener;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,14 +33,18 @@ public class MainActivity extends ActionBarActivity {
     private List<BluetoothDevice> availableDevices;
     private ArrayAdapter<String> devicesAdapter;
     private ListView devicesListView;
+    private PullToRefreshLayout pullToDiscover;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button discover = (Button) findViewById(R.id.discover);
-        discover.setOnClickListener(onDiscoveryCLick);
+        pullToDiscover = (PullToRefreshLayout) findViewById(R.id.devicesListParent);
+        ActionBarPullToRefresh.from(MainActivity.this)
+                .allChildrenArePullable()
+                .listener(onPullToDiscover)
+                .setup(pullToDiscover);
 
         devicesAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
         devicesListView = (ListView) findViewById(R.id.devicesList);
@@ -46,6 +54,7 @@ public class MainActivity extends ActionBarActivity {
         pairedDevices = new ArrayList<BluetoothDevice>(mBluetoothAdapter.getBondedDevices());
 
         for (BluetoothDevice device : pairedDevices){
+            Log.d(TAG, "Added device "+ device.getName() );
             availableDevices.add(device);
             devicesAdapter.add(device.getName());
         }
@@ -60,9 +69,9 @@ public class MainActivity extends ActionBarActivity {
         registerReceiver(BluetoothReceiver, filter); // Don't forget to unregister during onDestroy
     }
 
-    View.OnClickListener onDiscoveryCLick = new View.OnClickListener() {
+    OnRefreshListener onPullToDiscover = new OnRefreshListener() {
         @Override
-        public void onClick(View v) {
+        public void onRefreshStarted(View view) {
             startDiscovery();
         }
     };
@@ -161,11 +170,6 @@ public class MainActivity extends ActionBarActivity {
 
             if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
                 Log.d(TAG, "Discovery Finished");
-                findViewById(R.id.discover).setEnabled(true);
-            }
-
-            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.endsWith(action)){
-                findViewById(R.id.discover).setEnabled(false);
             }
         }
     };
