@@ -1,5 +1,6 @@
 package com.bluetoothclient;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -13,6 +14,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.*;
+import de.keyboardsurfer.android.widget.crouton.Crouton;
+import de.keyboardsurfer.android.widget.crouton.Style;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -23,6 +27,7 @@ public class MainActivity extends ActionBarActivity {
     private final String TAG = "MainActivity";
     private final int REQUEST_ENABLE_BT = 1;
     private final  BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
     List<BluetoothDevice> pairedDevices = new ArrayList<BluetoothDevice>(mBluetoothAdapter.getBondedDevices());
     private List<BluetoothDevice> availableDevices;
     private ArrayAdapter<String> devicesAdapter;
@@ -84,7 +89,7 @@ public class MainActivity extends ActionBarActivity {
             } else if ( mBluetoothAdapter.isEnabled() ) return mBluetoothAdapter.disable();
         } else {
             // No fucking BT support
-            Toast.makeText(MainActivity.this, getString(R.string.no_bt_adapter), Toast.LENGTH_LONG).show();
+            Crouton.makeText(this, R.string.no_bt_adapter, Style.ALERT).show();
             return false;
         }
         return true;
@@ -105,7 +110,7 @@ public class MainActivity extends ActionBarActivity {
                 Log.d("MainActivity", "Discovery started");
             } else {
                 Log.d("MainActivity", "Discovery could not be started");
-                Toast.makeText(MainActivity.this, "Discovery could not be started", Toast.LENGTH_LONG).show();
+                Crouton.makeText(this, "Discovery could not be started", Style.ALERT).show();
             }
             return discoveryStarted;
 
@@ -120,7 +125,7 @@ public class MainActivity extends ActionBarActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_ENABLE_BT){
             if (resultCode == RESULT_OK) startDiscovery();
-            else Toast.makeText(MainActivity.this, "We need bluetooth to give you superpowers", Toast.LENGTH_LONG).show();
+            else Crouton.makeText(this, "We need bluetooth to give you superpowers", Style.INFO).show();
         }
     }
 
@@ -191,6 +196,7 @@ public class MainActivity extends ActionBarActivity {
         super.onDestroy();
         if (mBluetoothAdapter.isDiscovering()) mBluetoothAdapter.cancelDiscovery();
         unregisterReceiver(BluetoothReceiver);
+        Crouton.cancelAllCroutons();
     }
 }
 
