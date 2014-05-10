@@ -14,6 +14,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.*;
 import android.widget.*;
+import de.keyboardsurfer.android.widget.crouton.Crouton;
+import de.keyboardsurfer.android.widget.crouton.Style;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,7 +30,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
     private final String TAG = "ConnectedActivity";
     private List<UUID> candidateUUIDs= new ArrayList<UUID>();
     private final  BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-    private  BluetoothConnector bluetoothConnector;
+    private BluetoothConnector bluetoothConnector;
     private BluetoothDevice bluetoothDevice;
     private String mac_address = null;
     private StreamToServer streamToServer;
@@ -188,13 +190,13 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
 
         @Override
         protected void onPreExecute(){
-            Toast.makeText(ConnectedActivity.this, "Initiating device connection", Toast.LENGTH_LONG).show();
+            Crouton.makeText(ConnectedActivity.this, R.string.initiate_connection, Style.INFO).show();
         }
 
         @Override
         protected void onPostExecute(BluetoothConnector bluetoothConnector) {
-            Log.d(TAG, "Connected to device, getting input stream");
-            Toast.makeText(ConnectedActivity.this, "Connected to device", Toast.LENGTH_LONG).show();
+            Crouton.cancelAllCroutons();
+            Crouton.makeText(ConnectedActivity.this, R.string.connected, Style.INFO).show();
             findViewById(R.id.closeConnection).setEnabled(true);
             streamToServer = new StreamToServer(bluetoothConnector);
             streamToServer.start();
@@ -231,6 +233,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
 
     protected void OnDestroy(){
         bluetoothAdapter.cancelDiscovery();
+        Crouton.cancelAllCroutons();
     }
 
 }

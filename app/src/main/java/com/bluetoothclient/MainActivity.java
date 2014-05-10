@@ -1,6 +1,5 @@
 package com.bluetoothclient;
 
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -16,10 +15,8 @@ import android.view.View;
 import android.widget.*;
 import de.keyboardsurfer.android.widget.crouton.Crouton;
 import de.keyboardsurfer.android.widget.crouton.Style;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -28,7 +25,7 @@ public class MainActivity extends ActionBarActivity {
     private final int REQUEST_ENABLE_BT = 1;
     private final  BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
-    List<BluetoothDevice> pairedDevices = new ArrayList<BluetoothDevice>(mBluetoothAdapter.getBondedDevices());
+    List<BluetoothDevice> pairedDevices;
     private List<BluetoothDevice> availableDevices;
     private ArrayAdapter<String> devicesAdapter;
     private ListView devicesListView;
@@ -46,6 +43,12 @@ public class MainActivity extends ActionBarActivity {
         devicesListView.setAdapter(devicesAdapter);
 
         availableDevices = new ArrayList<BluetoothDevice>();
+        pairedDevices = new ArrayList<BluetoothDevice>(mBluetoothAdapter.getBondedDevices());
+
+        for (BluetoothDevice device : pairedDevices){
+            availableDevices.add(device);
+            devicesAdapter.add(device.getName());
+        }
 
         devicesListView.setOnItemLongClickListener(onDeviceClick);
 
@@ -109,8 +112,7 @@ public class MainActivity extends ActionBarActivity {
             if (discoveryStarted) {
                 Log.d("MainActivity", "Discovery started");
             } else {
-                Log.d("MainActivity", "Discovery could not be started");
-                Crouton.makeText(this, "Discovery could not be started", Style.ALERT).show();
+                Crouton.makeText(this, R.string.discovery_start_error, Style.ALERT).show();
             }
             return discoveryStarted;
 
@@ -125,7 +127,7 @@ public class MainActivity extends ActionBarActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_ENABLE_BT){
             if (resultCode == RESULT_OK) startDiscovery();
-            else Crouton.makeText(this, "We need bluetooth to give you superpowers", Style.INFO).show();
+            else Crouton.makeText(this, R.string.bt_access_required, Style.INFO).show();
         }
     }
 
@@ -142,11 +144,6 @@ public class MainActivity extends ActionBarActivity {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                int deviceIndex = pairedDevices.indexOf(device);
-                if (deviceIndex != -1){
-                    //if device is paired, list the paired version
-                    device = pairedDevices.get(deviceIndex);
-                }
                 try {
                     Log.d(TAG, device.getName() + " found");
                     if (availableDevices.indexOf(device) == -1) {
@@ -177,8 +174,30 @@ public class MainActivity extends ActionBarActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
+        final SearchView filterDevices = new SearchView(getSupportActionBar().getThemedContext());
+        filterDevices.setQueryHint("Search");
+        filterDevices.setOnQueryTextListener(onFilterDevices);
+
+        menu.add(Menu.NONE,Menu.NONE,1,"Search")
+                .setIcon(R.drawable.abc_ic_search)
+                .setActionView(filterDevices)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+
         return true;
     }
+
+    SearchView.OnQueryTextListener onFilterDevices = new SearchView.OnQueryTextListener() {
+        @Override
+        public boolean onQueryTextSubmit(String query) {
+            return false;
+        }
+
+        @Override
+        public boolean onQueryTextChange(String newText) {
+            devicesAdapter.getFilter().filter(newText);
+            return false;
+        }
+    };
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
