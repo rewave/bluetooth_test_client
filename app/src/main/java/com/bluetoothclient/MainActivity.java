@@ -27,7 +27,7 @@ public class MainActivity extends ActionBarActivity {
 
     private final String TAG = "MainActivity";
     private final int REQUEST_ENABLE_BT = 1;
-    private final  BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private final  BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
     List<BluetoothDevice> pairedDevices;
     private List<BluetoothDevice> availableDevices;
@@ -51,13 +51,7 @@ public class MainActivity extends ActionBarActivity {
         devicesListView.setAdapter(devicesAdapter);
 
         availableDevices = new ArrayList<BluetoothDevice>();
-        pairedDevices = new ArrayList<BluetoothDevice>(mBluetoothAdapter.getBondedDevices());
-
-        for (BluetoothDevice device : pairedDevices){
-            Log.d(TAG, "Added device "+ device.getName() );
-            availableDevices.add(device);
-            devicesAdapter.add(device.getName());
-        }
+        pairedDevices = new ArrayList<BluetoothDevice>(bluetoothAdapter.getBondedDevices());
 
         devicesListView.setOnItemLongClickListener(onDeviceClick);
 
@@ -66,20 +60,23 @@ public class MainActivity extends ActionBarActivity {
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
 
-        registerReceiver(BluetoothReceiver, filter); // Don't forget to unregister during onDestroy
+        registerReceiver(BluetoothReceiver, filter);
+
+        listDevicesRoutine();
+
     }
 
     OnRefreshListener onPullToDiscover = new OnRefreshListener() {
         @Override
         public void onRefreshStarted(View view) {
-            startDiscovery();
+            listDevicesRoutine();
         }
     };
 
     AdapterView.OnItemLongClickListener onDeviceClick = new AdapterView.OnItemLongClickListener() {
         @Override
         public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-            mBluetoothAdapter.cancelDiscovery();
+            bluetoothAdapter.cancelDiscovery();
             Intent intent = new Intent(MainActivity.this, ConnectedActivity.class);
             BluetoothDevice selectedDevice = availableDevices.get(position);
             intent.putExtra("MAC_ADDRESS", selectedDevice.getAddress());
@@ -88,54 +85,11 @@ public class MainActivity extends ActionBarActivity {
         }
     };
 
-    private boolean switchBluetooth(boolean action){
-        if (mBluetoothAdapter != null){
-            if (action) {
-                if (!mBluetoothAdapter.isEnabled()) {
-                    Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-                } else {
-                    //bt is on
-                    return true;
-                }
-            } else if ( mBluetoothAdapter.isEnabled() ) return mBluetoothAdapter.disable();
-        } else {
-            // No fucking BT support
-            Crouton.makeText(this, R.string.no_bt_adapter, Style.ALERT).show();
-            return false;
-        }
-        return true;
-    }
-
-    private boolean startDiscovery(){
-        if (availableDevices != null){
-            availableDevices.clear();
-            devicesAdapter.clear();
-        }
-
-        if (mBluetoothAdapter.isEnabled()) {
-            if (mBluetoothAdapter.isDiscovering()) {
-                mBluetoothAdapter.cancelDiscovery();
-            }
-            Boolean discoveryStarted = mBluetoothAdapter.startDiscovery();
-            if (discoveryStarted) {
-                Log.d("MainActivity", "Discovery started");
-            } else {
-                Crouton.makeText(this, R.string.discovery_start_error, Style.ALERT).show();
-            }
-            return discoveryStarted;
-
-        } else {
-            switchBluetooth(true);
-        }
-        return false;
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_ENABLE_BT){
-            if (resultCode == RESULT_OK) startDiscovery();
+            if (resultCode == RESULT_OK) listDevicesRoutine();
             else Crouton.makeText(this, R.string.bt_access_required, Style.INFO).show();
         }
     }
@@ -145,19 +99,12 @@ public class MainActivity extends ActionBarActivity {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
 
-            //When user allows bluetooth usage, start discovering
-            if(BluetoothAdapter.ACTION_REQUEST_ENABLE.equals(action)){
-            }
-
-            // When discovery finds a device
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                // Get the BluetoothDevice object from the Intent
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                BluetoothDevice foundDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 try {
-                    Log.d(TAG, device.getName() + " found");
-                    if (availableDevices.indexOf(device) == -1) {
-                        availableDevices.add(device);
-                        devicesAdapter.add(device.getName());
+                    Log.d(TAG, foundDevice.getName() + " found");
+                    if (availableDevices.indexOf(foundDevice) == -1) {
+                        displayDevice(foundDevice);
                     } else {
                         Log.d(TAG, "Device already in list");
                     }
@@ -165,7 +112,6 @@ public class MainActivity extends ActionBarActivity {
                 } catch (NullPointerException e){
                     Log.e("MainActivity", "Device name is null");
                 }
-
             }
 
             if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
@@ -182,7 +128,7 @@ public class MainActivity extends ActionBarActivity {
         filterDevices.setQueryHint("Search");
         filterDevices.setOnQueryTextListener(onFilterDevices);
 
-        menu.add(Menu.NONE,Menu.NONE,1,"Search")
+        menu.add(Menu.NONE, Menu.NONE, 1, "Search")
                 .setIcon(R.drawable.abc_ic_search)
                 .setActionView(filterDevices)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
@@ -217,9 +163,65 @@ public class MainActivity extends ActionBarActivity {
 
     protected  void onDestroy(){
         super.onDestroy();
-        if (mBluetoothAdapter.isDiscovering()) mBluetoothAdapter.cancelDiscovery();
+        if (bluetoothAdapter.isDiscovering()) bluetoothAdapter.cancelDiscovery();
         unregisterReceiver(BluetoothReceiver);
         Crouton.cancelAllCroutons();
+    }
+
+    private boolean switchBluetooth(boolean action){
+        if (bluetoothAdapter != null){
+            if (action) {
+                if (!bluetoothAdapter.isEnabled()) {
+                    Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                } else {
+                    //bt is on
+                    return true;
+                }
+            } else if ( bluetoothAdapter.isEnabled() ) return bluetoothAdapter.disable();
+        } else {
+            // No fucking BT support
+            Crouton.makeText(this, R.string.no_bt_adapter, Style.ALERT).show();
+            return false;
+        }
+        return true;
+    }
+
+    private void listAllPairedDevices(){
+        pairedDevices = new ArrayList<BluetoothDevice>(bluetoothAdapter.getBondedDevices());
+        for (BluetoothDevice pairedDevice : pairedDevices){
+            displayDevice(pairedDevice);
+        }
+    }
+
+    private void discoverNearbyDevices(){
+        if (bluetoothAdapter.isEnabled()) {
+            if (bluetoothAdapter.isDiscovering()) {
+                bluetoothAdapter.cancelDiscovery();
+            }
+            Boolean discoveryStarted = bluetoothAdapter.startDiscovery();
+            if (discoveryStarted) {
+                Log.d("MainActivity", "Discovery started");
+            } else {
+                Crouton.makeText(this, R.string.discovery_start_error, Style.ALERT).show();
+            }
+        } else {
+            switchBluetooth(true);
+        }
+    }
+
+    private void listDevicesRoutine(){
+        switchBluetooth(true);
+        listAllPairedDevices();
+        discoverNearbyDevices();
+    }
+
+    private void displayDevice(BluetoothDevice device){
+        if (availableDevices.indexOf(device) == -1) {
+            //device not already on list
+            availableDevices.add(device);
+            devicesAdapter.add(device.getName());
+        }
     }
 }
 
