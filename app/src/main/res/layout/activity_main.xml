@@ -13,9 +13,10 @@
             android:layout_width="fill_parent"
             android:layout_height="fill_parent">
         <ListView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
                 android:id="@+id/devicesList" android:layout_alignParentTop="true" android:layout_alignParentLeft="true"
                 android:layout_alignParentStart="true" android:layout_above="@+id/discover"/>
     </uk.co.senab.actionbarpulltorefresh.extras.actionbarcompat.PullToRefreshLayout>
+
 </RelativeLayout>

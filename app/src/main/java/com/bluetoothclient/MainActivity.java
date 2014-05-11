@@ -1,11 +1,9 @@
 package com.bluetoothclient;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.*;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -92,7 +90,19 @@ public class MainActivity extends ActionBarActivity {
         if(requestCode == REQUEST_ENABLE_BT){
             if (resultCode == RESULT_OK) listDevicesRoutine();
             else {
-                Crouton.makeText(this, R.string.bt_access_required, Style.INFO).show();
+                AlertDialog.Builder btRequiredBuilder = new AlertDialog.Builder(MainActivity.this);
+                btRequiredBuilder.setTitle(R.string.bt_access_required);
+                btRequiredBuilder.setMessage("Turn bluetooth on ?");
+                btRequiredBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        listDevicesRoutine();
+                    }
+                });
+
+                AlertDialog btRequiredAlert = btRequiredBuilder.create();
+                btRequiredAlert.show();
+                //Crouton.makeText(this, R.string.bt_access_required, Style.INFO).show();
             }
         }
     }
