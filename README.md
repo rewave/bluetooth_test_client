@@ -8,14 +8,14 @@ Process
 -------
 
 1. Switch on bluetooth with user's permission
-* if user allowed access :
-	    - start discovering and add found devices to a list
-	    - on long click device name :
-	        1. initiate connection to it using ```AsyncTask```
-	        2. after socket is connected, get read, write streams in a seperate ```AsyncTask```
-	        3. start streaming sensor data over socket 
-* if user denied access :
-	    - Notify that we need bluetooth and stop
+	* if user allowed access :
+		    - start discovering and add found devices to a list
+		    - on long click device name :
+		        1. initiate connection to it using ```AsyncTask```
+		        2. after socket is connected, get read, write streams in a seperate ```AsyncTask```
+		        3. start streaming sensor data over socket 
+	* if user denied access :
+		    - Notify that we need bluetooth and stop
 
 Data Format
 ```
@@ -39,8 +39,9 @@ Installation
 1. Download or clone this repository and open the folder as a new android studio project
 2. *Gradle* sync
 
- Licence
+Licence
 --------
+```
 The MIT License (MIT)
 
 Copyright (c) [2014] [Shivek Khurana]
@@ -62,3 +63,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
