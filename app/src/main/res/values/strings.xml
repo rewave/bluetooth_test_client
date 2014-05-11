@@ -10,8 +10,12 @@
     <string name="discovery">Discover</string>
     <string name="no_bt_adapter">Bluetooth not available</string>
     <string name="bt_access_required">We need to bluetooth to be awesome</string>
+    <string name="discovery_complete">Discovery Complete</string>
+    <string name="discovery_in_process">Discovery in process</string>
+    <string name="discovery_not_in_process">Discovery not in process</string>
     <string name="discovery_start_error">Discovery could not be started. Please try again</string>
     <string name="initiate_connection">Connection to device in process</string>
     <string name="connected">Connected to device</string>
+    <string name="action_cancel_discovery">Cancel Discovery</string>
 
 </resources>

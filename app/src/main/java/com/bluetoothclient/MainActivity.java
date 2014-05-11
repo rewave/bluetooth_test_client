@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,7 +26,7 @@ import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
 
-    private final String TAG = "MainActivity";
+    private final String TAG = " ---> MainActivity";
     private final int REQUEST_ENABLE_BT = 1;
     private final  BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -63,13 +64,12 @@ public class MainActivity extends ActionBarActivity {
         registerReceiver(BluetoothReceiver, filter);
 
         listDevicesRoutine();
-
     }
 
     OnRefreshListener onPullToDiscover = new OnRefreshListener() {
         @Override
         public void onRefreshStarted(View view) {
-            listDevicesRoutine();
+            discoverNearbyDevices();
         }
     };
 
@@ -90,7 +90,9 @@ public class MainActivity extends ActionBarActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_ENABLE_BT){
             if (resultCode == RESULT_OK) listDevicesRoutine();
-            else Crouton.makeText(this, R.string.bt_access_required, Style.INFO).show();
+            else {
+                Crouton.makeText(this, R.string.bt_access_required, Style.INFO).show();
+            }
         }
     }
 
@@ -124,6 +126,7 @@ public class MainActivity extends ActionBarActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
+
         final SearchView filterDevices = new SearchView(getSupportActionBar().getThemedContext());
         filterDevices.setQueryHint("Search");
         filterDevices.setOnQueryTextListener(onFilterDevices);
@@ -133,7 +136,7 @@ public class MainActivity extends ActionBarActivity {
                 .setActionView(filterDevices)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
 
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     SearchView.OnQueryTextListener onFilterDevices = new SearchView.OnQueryTextListener() {
@@ -158,6 +161,13 @@ public class MainActivity extends ActionBarActivity {
         if (id == R.id.action_settings) {
             return true;
         }
+
+        if (id == R.id.action_cancel_discovery){
+            stopDiscovering();
+            return  true;
+        }
+
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -168,23 +178,18 @@ public class MainActivity extends ActionBarActivity {
         Crouton.cancelAllCroutons();
     }
 
-    private boolean switchBluetooth(boolean action){
+    private void switchBluetooth(boolean action){
         if (bluetoothAdapter != null){
             if (action) {
                 if (!bluetoothAdapter.isEnabled()) {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-                } else {
-                    //bt is on
-                    return true;
                 }
-            } else if ( bluetoothAdapter.isEnabled() ) return bluetoothAdapter.disable();
+            } else if ( bluetoothAdapter.isEnabled() ) bluetoothAdapter.disable();
         } else {
             // No fucking BT support
             Crouton.makeText(this, R.string.no_bt_adapter, Style.ALERT).show();
-            return false;
         }
-        return true;
     }
 
     private void listAllPairedDevices(){
@@ -195,25 +200,42 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void discoverNearbyDevices(){
-        if (bluetoothAdapter.isEnabled()) {
-            if (bluetoothAdapter.isDiscovering()) {
-                bluetoothAdapter.cancelDiscovery();
+
+        new AsyncTask<Void, Void, Void>(){
+            @Override
+            public Void doInBackground(Void... params){
+                if (bluetoothAdapter.isEnabled()) {
+                    Boolean discoveryStarted = bluetoothAdapter.startDiscovery();
+                    if (discoveryStarted) Log.d(TAG, "Discovery started");
+                    else Log.e(TAG, "Discovery start error");
+                } else {
+                    switchBluetooth(true);
+                }
+                return null;
             }
-            Boolean discoveryStarted = bluetoothAdapter.startDiscovery();
-            if (discoveryStarted) {
-                Log.d("MainActivity", "Discovery started");
-            } else {
-                Crouton.makeText(this, R.string.discovery_start_error, Style.ALERT).show();
+
+            @Override
+            public void onPreExecute(){
+                pullToDiscover.setRefreshing(true);
             }
-        } else {
-            switchBluetooth(true);
-        }
+        }.execute();
     }
 
     private void listDevicesRoutine(){
         switchBluetooth(true);
-        listAllPairedDevices();
-        discoverNearbyDevices();
+        if (bluetoothAdapter.isEnabled()) {
+            listAllPairedDevices();
+        }
+    }
+
+    private void stopDiscovering(){
+        if(!bluetoothAdapter.isDiscovering()) {
+            Crouton.makeText(MainActivity.this, R.string.discovery_not_in_process, Style.INFO).show();
+        } else {
+            bluetoothAdapter.cancelDiscovery();
+            pullToDiscover.setRefreshComplete();
+            Crouton.makeText(MainActivity.this, R.string.discovery_complete, Style.CONFIRM).show();
+        }
     }
 
     private void displayDevice(BluetoothDevice device){
