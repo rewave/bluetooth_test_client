@@ -9,13 +9,13 @@ Process
 
 1. Switch on bluetooth with user's permission
 	* if user allowed access :
-		    - start discovering and add found devices to a list
-		    - on long click device name :
-		        1. initiate connection to it using ```AsyncTask```
-		        2. after socket is connected, get read, write streams in a seperate ```AsyncTask```
-		        3. start streaming sensor data over socket 
+		- start discovering and add found devices to a list
+		- on long click device name :
+			1. initiate connection to it using ```AsyncTask```
+			2. after socket is connected, get read, write streams in a seperate ```AsyncTask```
+			3. start streaming sensor data over socket 
 	* if user denied access :
-		    - Notify that we need bluetooth and stop
+		- Notify that we need bluetooth and stop
 
 Data Format
 ```
