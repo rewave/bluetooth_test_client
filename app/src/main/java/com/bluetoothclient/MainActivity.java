@@ -35,6 +35,7 @@ public class MainActivity extends ActionBarActivity {
     private ArrayAdapter<String> devicesAdapter;
     private ListView devicesListView;
     private PullToRefreshLayout pullToDiscover;
+    private MenuItem cancelDiscoveryAction;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,6 +132,10 @@ public class MainActivity extends ActionBarActivity {
         filterDevices.setQueryHint("Search");
         filterDevices.setOnQueryTextListener(onFilterDevices);
 
+        cancelDiscoveryAction =  menu.findItem(R.id.action_cancel_discovery);
+        if (bluetoothAdapter.isDiscovering()) cancelDiscoveryAction.setVisible(true);
+        else cancelDiscoveryAction.setVisible(false);
+
         menu.add(Menu.NONE, Menu.NONE, 1, "Search")
                 .setIcon(R.drawable.abc_ic_search)
                 .setActionView(filterDevices)
@@ -205,6 +210,7 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public Void doInBackground(Void... params){
                 if (bluetoothAdapter.isEnabled()) {
+                    invalidateOptionsMenu(); //used to show/hide cancelDiscovery button
                     Boolean discoveryStarted = bluetoothAdapter.startDiscovery();
                     if (discoveryStarted) Log.d(TAG, "Discovery started");
                     else Log.e(TAG, "Discovery start error");
@@ -232,6 +238,8 @@ public class MainActivity extends ActionBarActivity {
         if(!bluetoothAdapter.isDiscovering()) {
             Crouton.makeText(MainActivity.this, R.string.discovery_not_in_process, Style.INFO).show();
         } else {
+            invalidateOptionsMenu(); //used to show/hide cancelDiscovery button
+            //http://stackoverflow.com/questions/10692755/how-do-i-hide-a-menu-item-in-the-actionbar#answer-13584471
             bluetoothAdapter.cancelDiscovery();
             pullToDiscover.setRefreshComplete();
             Crouton.makeText(MainActivity.this, R.string.discovery_complete, Style.CONFIRM).show();
