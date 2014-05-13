@@ -27,7 +27,7 @@ import java.util.UUID;
 
 public class ConnectedActivity extends ActionBarActivity implements SensorEventListener {
 
-    private final String TAG = "ConnectedActivity";
+    private final String TAG = " ---> ConnectedActivity";
     private List<UUID> candidateUUIDs= new ArrayList<UUID>();
     private final  BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private BluetoothConnector bluetoothConnector;
@@ -54,15 +54,14 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
             bluetoothDevice = bluetoothAdapter.getRemoteDevice(mac_address);
         }
 
-        findViewById(R.id.closeConnection).setEnabled(false);
+        findViewById(R.id.close_connection).setEnabled(false);
 
-        ToggleButton toggleStream = (ToggleButton) findViewById(R.id.toggleStream);
+        ToggleButton toggleStream = (ToggleButton) findViewById(R.id.toggle_stream);
         toggleStream.setOnCheckedChangeListener(onPauseStreamToggle);
 
-        TextView deviceName = (TextView) findViewById(R.id.deviceName);
-        deviceName.setText(bluetoothDevice.getName());
+        setTitle(bluetoothDevice.getName());
 
-        Button closeConnection = (Button) findViewById(R.id.closeConnection);
+        Button closeConnection = (Button) findViewById(R.id.close_connection);
         closeConnection.setOnClickListener(onCloseConnectionClick);
 
         SeekBar threshold = (SeekBar) findViewById(R.id.threshold);
@@ -197,7 +196,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
         protected void onPostExecute(BluetoothConnector bluetoothConnector) {
             Crouton.cancelAllCroutons();
             Crouton.makeText(ConnectedActivity.this, R.string.connected, Style.INFO).show();
-            findViewById(R.id.closeConnection).setEnabled(true);
+            findViewById(R.id.close_connection).setEnabled(true);
             streamToServer = new StreamToServer(bluetoothConnector);
             streamToServer.start();
         }

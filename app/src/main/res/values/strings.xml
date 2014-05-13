@@ -17,5 +17,7 @@
     <string name="initiate_connection">Connection to device in process</string>
     <string name="connected">Connected to device</string>
     <string name="action_cancel_discovery">Cancel Discovery</string>
+    <string name="pull_to_refresh">Pull to refresh</string>
+    <string name="close_connection">Close Connection</string>
 
 </resources>

@@ -1,6 +1,5 @@
 package com.bluetoothclient;
 
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.*;
@@ -40,14 +39,14 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        pullToDiscover = (PullToRefreshLayout) findViewById(R.id.devicesListParent);
+        pullToDiscover = (PullToRefreshLayout) findViewById(R.id.devices_list_parent);
         ActionBarPullToRefresh.from(MainActivity.this)
                 .allChildrenArePullable()
                 .listener(onPullToDiscover)
                 .setup(pullToDiscover);
 
         devicesAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
-        devicesListView = (ListView) findViewById(R.id.devicesList);
+        devicesListView = (ListView) findViewById(R.id.devices_list);
         devicesListView.setAdapter(devicesAdapter);
 
         availableDevices = new ArrayList<BluetoothDevice>();
@@ -90,43 +89,36 @@ public class MainActivity extends ActionBarActivity {
         if(requestCode == REQUEST_ENABLE_BT){
             if (resultCode == RESULT_OK) listDevicesRoutine();
             else {
-                AlertDialog.Builder btRequiredBuilder = new AlertDialog.Builder(MainActivity.this);
-                btRequiredBuilder.setTitle(R.string.bt_access_required);
-                btRequiredBuilder.setMessage("Turn bluetooth on ?");
-                btRequiredBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        listDevicesRoutine();
-                    }
-                });
-
-                AlertDialog btRequiredAlert = btRequiredBuilder.create();
-                btRequiredAlert.show();
-                //Crouton.makeText(this, R.string.bt_access_required, Style.INFO).show();
+                stopDiscovering();
+                Toast.makeText(MainActivity.this, R.string.bt_access_required, Toast.LENGTH_LONG).show();
+                finish();
             }
         }
     }
 
     // Create a BroadcastReceiver for ACTION_FOUND
     private final BroadcastReceiver BluetoothReceiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, Intent intent){
             String action = intent.getAction();
 
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice foundDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                try {
-                    Log.d(TAG, foundDevice.getName() + " found");
+                String deviceName = foundDevice.getName();
+                if (deviceName != null){
                     if (availableDevices.indexOf(foundDevice) == -1) {
                         displayDevice(foundDevice);
                     } else {
                         Log.d(TAG, "Device already in list");
                     }
-
-                } catch (NullPointerException e){
-                    Log.e("MainActivity", "Device name is null");
+                }
+                else {
+                    Log.e(TAG, "Device name is null");
                 }
             }
 
+            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
+                Log.d(TAG, "Discovery Started");
+            }
             if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
                 Log.d(TAG, "Discovery Finished");
             }
@@ -143,8 +135,10 @@ public class MainActivity extends ActionBarActivity {
         filterDevices.setOnQueryTextListener(onFilterDevices);
 
         cancelDiscoveryAction =  menu.findItem(R.id.action_cancel_discovery);
+
+        cancelDiscoveryAction.setVisible(false);
         if (bluetoothAdapter.isDiscovering()) cancelDiscoveryAction.setVisible(true);
-        else cancelDiscoveryAction.setVisible(false);
+
 
         menu.add(Menu.NONE, Menu.NONE, 1, "Search")
                 .setIcon(R.drawable.abc_ic_search)
@@ -215,43 +209,30 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void discoverNearbyDevices(){
-
-        new AsyncTask<Void, Void, Void>(){
-            @Override
-            public Void doInBackground(Void... params){
-                if (bluetoothAdapter.isEnabled()) {
-                    invalidateOptionsMenu(); //used to show/hide cancelDiscovery button
-                    Boolean discoveryStarted = bluetoothAdapter.startDiscovery();
-                    if (discoveryStarted) Log.d(TAG, "Discovery started");
-                    else Log.e(TAG, "Discovery start error");
-                } else {
-                    switchBluetooth(true);
-                }
-                return null;
-            }
-
-            @Override
-            public void onPreExecute(){
-                pullToDiscover.setRefreshing(true);
-            }
-        }.execute();
+        if (bluetoothAdapter.isEnabled()) {
+            bluetoothAdapter.startDiscovery();
+            invalidateOptionsMenu(); //used to show/hide cancelDiscovery button
+            pullToDiscover.setRefreshing(true);
+        } else {
+            stopDiscovering();
+            switchBluetooth(true);
+        }
     }
 
     private void listDevicesRoutine(){
         switchBluetooth(true);
         if (bluetoothAdapter.isEnabled()) {
             listAllPairedDevices();
+            if (availableDevices.isEmpty()) discoverNearbyDevices(); //start discovering automagically only if no paired devices.
         }
     }
 
     private void stopDiscovering(){
-        if(!bluetoothAdapter.isDiscovering()) {
-            Crouton.makeText(MainActivity.this, R.string.discovery_not_in_process, Style.INFO).show();
-        } else {
+        pullToDiscover.setRefreshComplete();
+        if(bluetoothAdapter.isDiscovering()) {
             invalidateOptionsMenu(); //used to show/hide cancelDiscovery button
             //http://stackoverflow.com/questions/10692755/how-do-i-hide-a-menu-item-in-the-actionbar#answer-13584471
             bluetoothAdapter.cancelDiscovery();
-            pullToDiscover.setRefreshComplete();
             Crouton.makeText(MainActivity.this, R.string.discovery_complete, Style.CONFIRM).show();
         }
     }

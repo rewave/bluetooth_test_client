@@ -7,36 +7,27 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
     tools:context="com.bluetoothclient.ConnectedActivity">
-
-    <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Large Text"
-            android:id="@+id/deviceName"
-            android:layout_alignParentTop="true" android:layout_centerHorizontal="true"/>
     <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Close Connection"
-            android:id="@+id/closeConnection"
+            android:text="@string/close_connection"
+            android:id="@+id/close_connection"
             android:layout_alignParentBottom="true" android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"/>
     <ToggleButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="STREAM"
-            android:id="@+id/toggleStream"
+            android:id="@+id/toggle_stream"
             android:checked="true"
-            android:layout_alignTop="@+id/closeConnection" android:layout_alignParentLeft="true"
+            android:layout_alignTop="@+id/close_connection" android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"/>
     <SeekBar
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/threshold"
             android:layout_marginTop="137dp"
-            android:layout_below="@+id/deviceName" android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true" android:layout_alignRight="@+id/closeConnection"
-            android:layout_alignEnd="@+id/closeConnection" android:indeterminate="false" android:progress="150"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" android:layout_alignRight="@+id/close_connection"
+            android:layout_alignEnd="@+id/close_connection" android:indeterminate="false" android:progress="150"
             android:max="300"/>
 </RelativeLayout>

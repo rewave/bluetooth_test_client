@@ -9,14 +9,22 @@
     tools:context="com.bluetoothclient.MainActivity">
     <uk.co.senab.actionbarpulltorefresh.extras.actionbarcompat.PullToRefreshLayout
             xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/devicesListParent"
+            android:id="@+id/devices_list_parent"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent">
         <ListView
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
-                android:id="@+id/devicesList" android:layout_alignParentTop="true" android:layout_alignParentLeft="true"
+                android:id="@+id/devices_list" android:layout_alignParentTop="true" android:layout_alignParentLeft="true"
                 android:layout_alignParentStart="true" android:layout_above="@+id/discover"/>
     </uk.co.senab.actionbarpulltorefresh.extras.actionbarcompat.PullToRefreshLayout>
-
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="@string/pull_to_refresh"
+            android:id="@+id/pull_to_refresh"
+            android:layout_alignBottom="@+id/devices_list_parent" android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" android:layout_alignRight="@+id/devices_list_parent"
+            android:layout_alignEnd="@+id/devices_list_parent" android:gravity="center"/>
 </RelativeLayout>
