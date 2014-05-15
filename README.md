@@ -31,10 +31,10 @@ Todos
 * Better User Interface : in process
 * Run connection checks in background
 * Add ```greenDao``` to log data on client
-* Convert ```connectToDevice``` Thread into ```AsyncTask```
+* Convert ```StreamToDevice``` Thread into ```AsyncTask```
 * <strike>Discover devices in background</strike>
-* important : if user denies bluetooth, show a button to restart the process
-* Initiate connection in a blocking fashion on main activity itself.
+* <strike>important : if user denies bluetooth, show a button to restart the process</strike>
+* <strike>Initiate connection in a blocking fashion.</strike>
 
 
 Installation

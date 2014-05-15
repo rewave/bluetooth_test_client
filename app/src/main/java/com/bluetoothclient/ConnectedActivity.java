@@ -1,5 +1,6 @@
 package com.bluetoothclient;
 
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -43,6 +44,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        supportRequestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_connected);
 
         Bundle extras = getIntent().getExtras();
@@ -189,11 +191,13 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
 
         @Override
         protected void onPreExecute(){
+            setProgressBarIndeterminateVisibility(true);
             Crouton.makeText(ConnectedActivity.this, R.string.initiate_connection, Style.INFO).show();
         }
 
         @Override
         protected void onPostExecute(BluetoothConnector bluetoothConnector) {
+            setProgressBarIndeterminateVisibility(false);
             Crouton.cancelAllCroutons();
             Crouton.makeText(ConnectedActivity.this, R.string.connected, Style.INFO).show();
             findViewById(R.id.close_connection).setEnabled(true);

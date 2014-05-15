@@ -32,7 +32,6 @@ public class MainActivity extends ActionBarActivity {
     private ArrayAdapter<String> devicesAdapter;
     private ListView devicesListView;
     private PullToRefreshLayout pullToDiscover;
-    private MenuItem cancelDiscoveryAction;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +103,7 @@ public class MainActivity extends ActionBarActivity {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice foundDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = foundDevice.getName();
+                //TODO : Fix null device Name problem
                 if (deviceName != null){
                     if (availableDevices.indexOf(foundDevice) == -1) {
                         displayDevice(foundDevice);
@@ -127,23 +127,29 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        MenuItem cancelDiscoveryAction;
+        MenuItem filterDevicesAction;
+
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
 
         final SearchView filterDevices = new SearchView(getSupportActionBar().getThemedContext());
-        filterDevices.setQueryHint("Search");
+        filterDevices.setQueryHint("Filter devices");
         filterDevices.setOnQueryTextListener(onFilterDevices);
 
         cancelDiscoveryAction =  menu.findItem(R.id.action_cancel_discovery);
+        filterDevicesAction = menu.findItem(R.id.action_filter_devices);
 
+        filterDevicesAction.setActionView(filterDevices);
         cancelDiscoveryAction.setVisible(false);
-        if (bluetoothAdapter.isDiscovering()) cancelDiscoveryAction.setVisible(true);
+
+        if (bluetoothAdapter.isDiscovering()){
+            filterDevicesAction.setVisible(false);
+            cancelDiscoveryAction.setVisible(true);
+        }
 
 
-        menu.add(Menu.NONE, Menu.NONE, 1, "Search")
-                .setIcon(R.drawable.abc_ic_search)
-                .setActionView(filterDevices)
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+
 
         return super.onCreateOptionsMenu(menu);
     }
