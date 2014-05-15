@@ -1,8 +1,6 @@
 Bluetooth Test Client
 =====================
-**Under Development**
-
-*Android application to connect to a PyBluez server and transmit accelrometer and gyroscope data.*
+*Android application to connect to a PyBluez server and transmit accelerometer and gyroscope data.*
 
 Process
 -------
@@ -34,7 +32,8 @@ Todos
 * <strike>Discover devices in background</strike>
 * <strike>important : if user denies bluetooth, show a button to restart the process</strike>
 * <strike>Initiate connection in a blocking fashion.</strike>
-
+* Automated Testing
+* Degrade gracefully if no BT support
 
 Installation
 ------------
