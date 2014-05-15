@@ -232,6 +232,7 @@ public class MainActivity extends ActionBarActivity {
         if (device.getName() != null){
             if (availableDevices.indexOf(device) == -1) {
                 //device not already on list
+                //TODO : fix Erratic behaviour
                 Log.d(TAG, "Found "+device.getName());
                 availableDevices.add(device);
                 devicesAdapter.add(device.getName());
