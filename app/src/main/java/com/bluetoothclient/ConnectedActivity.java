@@ -217,6 +217,7 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
             } catch (IOException e){
                 Log.d(TAG, "Unable to get output stream");
                 e.printStackTrace();
+                //TODO : Most probably, the server is not running. Tell user to start server or transfer it.
             }
         }
 
@@ -235,7 +236,6 @@ public class ConnectedActivity extends ActionBarActivity implements SensorEventL
     }
 
     protected void OnDestroy(){
-        bluetoothAdapter.cancelDiscovery();
         Crouton.cancelAllCroutons();
     }
 

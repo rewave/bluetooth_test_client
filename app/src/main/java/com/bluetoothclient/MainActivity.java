@@ -135,10 +135,6 @@ public class MainActivity extends ActionBarActivity {
             filterDevicesAction.setVisible(false);
             cancelDiscoveryAction.setVisible(true);
         }
-
-
-
-
         return super.onCreateOptionsMenu(menu);
     }
 

@@ -28,9 +28,8 @@ Frequency is adjustable on client.
 Todos
 -----
 * Trim ```BluetoothWrapper``` class
-* Better User Interface : in process
+* <strike>Better User Interface : good enough</strike>
 * Run connection checks in background
-* Add ```greenDao``` to log data on client
 * Convert ```StreamToDevice``` Thread into ```AsyncTask```
 * <strike>Discover devices in background</strike>
 * <strike>important : if user denies bluetooth, show a button to restart the process</strike>
