@@ -3,7 +3,6 @@ package com.bluetoothclient;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.*;
-import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -51,7 +50,7 @@ public class MainActivity extends ActionBarActivity {
         availableDevices = new ArrayList<BluetoothDevice>();
         pairedDevices = new ArrayList<BluetoothDevice>(bluetoothAdapter.getBondedDevices());
 
-        devicesListView.setOnItemLongClickListener(onDeviceClick);
+        devicesListView.setOnItemClickListener(onDeviceClick);
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothDevice.ACTION_FOUND);
@@ -70,15 +69,14 @@ public class MainActivity extends ActionBarActivity {
         }
     };
 
-    AdapterView.OnItemLongClickListener onDeviceClick = new AdapterView.OnItemLongClickListener() {
+    AdapterView.OnItemClickListener onDeviceClick = new AdapterView.OnItemClickListener() {
         @Override
-        public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             bluetoothAdapter.cancelDiscovery();
             Intent intent = new Intent(MainActivity.this, ConnectedActivity.class);
             BluetoothDevice selectedDevice = availableDevices.get(position);
             intent.putExtra("MAC_ADDRESS", selectedDevice.getAddress());
             startActivity(intent);
-            return true;
         }
     };
 
@@ -102,24 +100,14 @@ public class MainActivity extends ActionBarActivity {
 
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice foundDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                String deviceName = foundDevice.getName();
-                //TODO : Fix null device Name problem
-                if (deviceName != null){
-                    if (availableDevices.indexOf(foundDevice) == -1) {
-                        displayDevice(foundDevice);
-                    } else {
-                        Log.d(TAG, "Device already in list");
-                    }
-                }
-                else {
-                    Log.e(TAG, "Device name is null");
-                }
+                displayDevice(foundDevice);
             }
 
             if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
                 Log.d(TAG, "Discovery Started");
             }
             if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
+                stopDiscovering();
                 Log.d(TAG, "Discovery Finished");
             }
         }
@@ -229,7 +217,7 @@ public class MainActivity extends ActionBarActivity {
         switchBluetooth(true);
         if (bluetoothAdapter.isEnabled()) {
             listAllPairedDevices();
-            if (availableDevices.isEmpty()) discoverNearbyDevices(); //start discovering automagically only if no paired devices.
+            if (availableDevices.isEmpty()) discoverNearbyDevices(); //start discovering automatically only if no paired devices.
         }
     }
 
@@ -244,11 +232,23 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void displayDevice(BluetoothDevice device){
-        if (availableDevices.indexOf(device) == -1) {
-            //device not already on list
-            availableDevices.add(device);
-            devicesAdapter.add(device.getName());
+
+        if (device.getName() != null){
+            if (availableDevices.indexOf(device) == -1) {
+                //device not already on list
+                Log.d(TAG, "Found "+device.getName());
+                availableDevices.add(device);
+                devicesAdapter.add(device.getName());
+                devicesAdapter.notifyDataSetChanged();
+            }
+            else {
+                Log.d(TAG, "Device already in list");
+            }
         }
+        else {
+            Log.e(TAG, "Device name is null");
+        }
+
     }
 }
 
